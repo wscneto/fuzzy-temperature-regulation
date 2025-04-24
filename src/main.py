@@ -3,12 +3,12 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 import matplotlib.pyplot as plt
 
-# Create the fuzzy variables (inputs and outputs)
+# Create the fuzzy variables
 current_temp = ctrl.Antecedent(np.arange(0, 51, 1), 'current_temp')  # 0-50°C range
 desired_temp = ctrl.Antecedent(np.arange(0, 51, 1), 'desired_temp')  # 0-50°C range
 power_adjustment = ctrl.Consequent(np.arange(-100, 101, 1), 'power_adjustment')  # -100% to +100%
 
-# Define membership functions for current temperature (in °C)
+# Define membership functions for current temperature
 current_temp['very_cold'] = fuzz.trimf(current_temp.universe, [0, 0, 10])
 current_temp['cold'] = fuzz.trimf(current_temp.universe, [5, 10, 15])
 current_temp['cool'] = fuzz.trimf(current_temp.universe, [10, 15, 20])
@@ -17,7 +17,7 @@ current_temp['warm'] = fuzz.trimf(current_temp.universe, [22, 27, 30])
 current_temp['hot'] = fuzz.trimf(current_temp.universe, [27, 35, 35])
 current_temp['very_hot'] = fuzz.trimf(current_temp.universe, [30, 50, 50])
 
-# Define membership functions for desired temperature (in °C)
+# Define membership functions for desired temperature
 desired_temp['very_cold'] = fuzz.trimf(desired_temp.universe, [0, 0, 10])
 desired_temp['cold'] = fuzz.trimf(desired_temp.universe, [5, 10, 15])
 desired_temp['cool'] = fuzz.trimf(desired_temp.universe, [10, 15, 20])
@@ -37,13 +37,13 @@ power_adjustment['moderate_heating'] = fuzz.trimf(power_adjustment.universe, [25
 power_adjustment['strong_heating'] = fuzz.trimf(power_adjustment.universe, [50, 75, 100])
 power_adjustment['max_heating'] = fuzz.trimf(power_adjustment.universe, [75, 100, 100])
 
-# Visualize the membership functions (optional)
+# Visualize the membership functions
 current_temp.view()
 desired_temp.view()
 power_adjustment.view()
 plt.show()
 
-# Create fuzzy rules
+# Fuzzy rules
 rules = [
     # Very cold current temperature cases
     ctrl.Rule(current_temp['very_cold'] & desired_temp['comfortable'], power_adjustment['strong_heating']),
@@ -72,21 +72,29 @@ rules = [
     ctrl.Rule(current_temp['hot'] & desired_temp['very_cold'], power_adjustment['max_cooling']),
     ctrl.Rule(current_temp['hot'] & desired_temp['cold'], power_adjustment['max_cooling']),
     ctrl.Rule(current_temp['hot'] & desired_temp['cool'], power_adjustment['strong_cooling']),
-    ctrl.Rule(current_temp['hot'] & desired_temp['comfortable'], power_adjustment['moderate_cooling'])
+    ctrl.Rule(current_temp['hot'] & desired_temp['comfortable'], power_adjustment['moderate_cooling']),
+
+    # Very hot current temperature cases
+    ctrl.Rule(current_temp['very_hot'] & desired_temp['very_cold'], power_adjustment['max_cooling']),
+    ctrl.Rule(current_temp['very_hot'] & desired_temp['cold'], power_adjustment['max_cooling']),
+    ctrl.Rule(current_temp['very_hot'] & desired_temp['cool'], power_adjustment['strong_cooling']),
+    ctrl.Rule(current_temp['very_hot'] & desired_temp['comfortable'], power_adjustment['moderate_cooling']),
+    ctrl.Rule(current_temp['very_hot'] & desired_temp['warm'], power_adjustment['slight_cooling']),
+    ctrl.Rule(current_temp['very_hot'] & desired_temp['hot'], power_adjustment['no_change']),
 ]
 
 # Create and simulate the control system
 temp_ctrl = ctrl.ControlSystem(rules)
 temp_simulation = ctrl.ControlSystemSimulation(temp_ctrl)
 
-# Example usage with Celsius values
-temp_simulation.input['current_temp'] = 28  # Current temperature in °C
-temp_simulation.input['desired_temp'] = 22  # Desired temperature in °C
+# Example usage
+temp_simulation.input['current_temp'] = 40  # Current temperature
+temp_simulation.input['desired_temp'] = 22  # Desired temperature
 
 # Compute the result
 temp_simulation.compute()
 
-# Print the output
+# Output
 print("Power Adjustment: %.3f" %temp_simulation.output['power_adjustment'], '%')
 power_adjustment.view(sim=temp_simulation)
 plt.show()
