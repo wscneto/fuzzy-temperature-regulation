@@ -1,2 +1,2 @@
 # Fuzzy temperature regulation
-Python implementation of a fuzzy inference system for shower's valve opening regulation.
+Python implementation of a fuzzy inference system for shower's valve opening regulation to control the temperature.
