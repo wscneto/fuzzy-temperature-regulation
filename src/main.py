@@ -3,98 +3,147 @@ import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 import matplotlib.pyplot as plt
 
-# Create the fuzzy variables
-current_temp = ctrl.Antecedent(np.arange(0, 51, 1), 'current_temp')  # 0-50°C range
-desired_temp = ctrl.Antecedent(np.arange(0, 51, 1), 'desired_temp')  # 0-50°C range
-power_adjustment = ctrl.Consequent(np.arange(-100, 101, 1), 'power_adjustment')  # -100% to +100%
+# Fuzzy variables
+current_temp = ctrl.Antecedent(np.arange(0, 51, 1), 'current_temp')  # 0-50°C
+water_flow = ctrl.Antecedent(np.arange(0, 101, 1), 'water_flow')     # 0-100%
+valve_opening = ctrl.Consequent(np.arange(-100, 101, 1), 'valve_opening')  # -100% to +100%
 
-# Define membership functions for current temperature
+# Membership functions for current temperature
 current_temp['very_cold'] = fuzz.trimf(current_temp.universe, [0, 0, 10])
 current_temp['cold'] = fuzz.trimf(current_temp.universe, [5, 10, 15])
 current_temp['cool'] = fuzz.trimf(current_temp.universe, [10, 15, 20])
 current_temp['comfortable'] = fuzz.trimf(current_temp.universe, [18, 22, 25])
 current_temp['warm'] = fuzz.trimf(current_temp.universe, [22, 27, 30])
-current_temp['hot'] = fuzz.trimf(current_temp.universe, [27, 35, 35])
-current_temp['very_hot'] = fuzz.trimf(current_temp.universe, [30, 50, 50])
+current_temp['hot'] = fuzz.trimf(current_temp.universe, [27, 35, 40])
+current_temp['very_hot'] = fuzz.trimf(current_temp.universe, [35, 50, 50])
 
-# Define membership functions for desired temperature
-desired_temp['very_cold'] = fuzz.trimf(desired_temp.universe, [0, 0, 10])
-desired_temp['cold'] = fuzz.trimf(desired_temp.universe, [5, 10, 15])
-desired_temp['cool'] = fuzz.trimf(desired_temp.universe, [10, 15, 20])
-desired_temp['comfortable'] = fuzz.trimf(desired_temp.universe, [18, 22, 25])
-desired_temp['warm'] = fuzz.trimf(desired_temp.universe, [22, 27, 30])
-desired_temp['hot'] = fuzz.trimf(desired_temp.universe, [27, 35, 35])
-desired_temp['very_hot'] = fuzz.trimf(desired_temp.universe, [30, 50, 50])
+# Membership functions for water flow
+water_flow['very_weak'] = fuzz.trimf(water_flow.universe, [0, 0, 20])
+water_flow['weak'] = fuzz.trimf(water_flow.universe, [10, 25, 40])
+water_flow['normal'] = fuzz.trimf(water_flow.universe, [30, 50, 70])
+water_flow['strong'] = fuzz.trimf(water_flow.universe, [60, 75, 85])
+water_flow['very_strong'] = fuzz.trimf(water_flow.universe, [80, 100, 100])
 
-# Define membership functions for power adjustment
-power_adjustment['max_cooling'] = fuzz.trimf(power_adjustment.universe, [-100, -100, -75])
-power_adjustment['strong_cooling'] = fuzz.trimf(power_adjustment.universe, [-100, -75, -50])
-power_adjustment['moderate_cooling'] = fuzz.trimf(power_adjustment.universe, [-75, -50, -25])
-power_adjustment['slight_cooling'] = fuzz.trimf(power_adjustment.universe, [-50, -25, 0])
-power_adjustment['no_change'] = fuzz.trimf(power_adjustment.universe, [-25, 0, 25])
-power_adjustment['slight_heating'] = fuzz.trimf(power_adjustment.universe, [0, 25, 50])
-power_adjustment['moderate_heating'] = fuzz.trimf(power_adjustment.universe, [25, 50, 75])
-power_adjustment['strong_heating'] = fuzz.trimf(power_adjustment.universe, [50, 75, 100])
-power_adjustment['max_heating'] = fuzz.trimf(power_adjustment.universe, [75, 100, 100])
+# Membership functions for valve opening
+valve_opening['max_closing'] = fuzz.trimf(valve_opening.universe, [-100, -100, -75])
+valve_opening['strong_closing'] = fuzz.trimf(valve_opening.universe, [-100, -75, -50])
+valve_opening['moderate_closing'] = fuzz.trimf(valve_opening.universe, [-75, -50, -25])
+valve_opening['slight_closing'] = fuzz.trimf(valve_opening.universe, [-50, -25, 0])
+valve_opening['no_change'] = fuzz.trimf(valve_opening.universe, [-25, 0, 25])
+valve_opening['slight_opening'] = fuzz.trimf(valve_opening.universe, [0, 25, 50])
+valve_opening['moderate_opening'] = fuzz.trimf(valve_opening.universe, [25, 50, 75])
+valve_opening['strong_opening'] = fuzz.trimf(valve_opening.universe, [50, 75, 100])
+valve_opening['max_opening'] = fuzz.trimf(valve_opening.universe, [75, 100, 100])
 
-# Visualize the membership functions
-current_temp.view()
-desired_temp.view()
-power_adjustment.view()
-plt.show()
-
-# Fuzzy rules
 rules = [
-    # Very cold current temperature cases
-    ctrl.Rule(current_temp['very_cold'] & desired_temp['comfortable'], power_adjustment['strong_heating']),
-    ctrl.Rule(current_temp['very_cold'] & desired_temp['warm'], power_adjustment['max_heating']),
-    ctrl.Rule(current_temp['very_cold'] & desired_temp['hot'], power_adjustment['max_heating']),
-    
-    # Cold current temperature cases
-    ctrl.Rule(current_temp['cold'] & desired_temp['comfortable'], power_adjustment['moderate_heating']),
-    ctrl.Rule(current_temp['cold'] & desired_temp['warm'], power_adjustment['strong_heating']),
-    ctrl.Rule(current_temp['cold'] & desired_temp['hot'], power_adjustment['max_heating']),
-    
-    # Comfortable current temperature cases
-    ctrl.Rule(current_temp['comfortable'] & desired_temp['very_cold'], power_adjustment['strong_cooling']),
-    ctrl.Rule(current_temp['comfortable'] & desired_temp['cold'], power_adjustment['moderate_cooling']),
-    ctrl.Rule(current_temp['comfortable'] & desired_temp['cool'], power_adjustment['slight_cooling']),
-    ctrl.Rule(current_temp['comfortable'] & desired_temp['warm'], power_adjustment['slight_heating']),
-    ctrl.Rule(current_temp['comfortable'] & desired_temp['hot'], power_adjustment['moderate_heating']),
-    
-    # Warm current temperature cases
-    ctrl.Rule(current_temp['warm'] & desired_temp['very_cold'], power_adjustment['max_cooling']),
-    ctrl.Rule(current_temp['warm'] & desired_temp['cold'], power_adjustment['strong_cooling']),
-    ctrl.Rule(current_temp['warm'] & desired_temp['cool'], power_adjustment['moderate_cooling']),
-    ctrl.Rule(current_temp['warm'] & desired_temp['comfortable'], power_adjustment['slight_cooling']),
-    
-    # Hot current temperature cases
-    ctrl.Rule(current_temp['hot'] & desired_temp['very_cold'], power_adjustment['max_cooling']),
-    ctrl.Rule(current_temp['hot'] & desired_temp['cold'], power_adjustment['max_cooling']),
-    ctrl.Rule(current_temp['hot'] & desired_temp['cool'], power_adjustment['strong_cooling']),
-    ctrl.Rule(current_temp['hot'] & desired_temp['comfortable'], power_adjustment['moderate_cooling']),
+    # Very cold
+    ctrl.Rule(current_temp['very_cold'] & water_flow['very_weak'], valve_opening['slight_closing']),
+    ctrl.Rule(current_temp['very_cold'] & water_flow['weak'], valve_opening['moderate_closing']),
+    ctrl.Rule(current_temp['very_cold'] & water_flow['normal'], valve_opening['strong_closing']),
+    ctrl.Rule(current_temp['very_cold'] & water_flow['strong'], valve_opening['max_closing']),
+    ctrl.Rule(current_temp['very_cold'] & water_flow['very_strong'], valve_opening['max_closing']),
 
-    # Very hot current temperature cases
-    ctrl.Rule(current_temp['very_hot'] & desired_temp['very_cold'], power_adjustment['max_cooling']),
-    ctrl.Rule(current_temp['very_hot'] & desired_temp['cold'], power_adjustment['max_cooling']),
-    ctrl.Rule(current_temp['very_hot'] & desired_temp['cool'], power_adjustment['strong_cooling']),
-    ctrl.Rule(current_temp['very_hot'] & desired_temp['comfortable'], power_adjustment['moderate_cooling']),
-    ctrl.Rule(current_temp['very_hot'] & desired_temp['warm'], power_adjustment['slight_cooling']),
-    ctrl.Rule(current_temp['very_hot'] & desired_temp['hot'], power_adjustment['no_change']),
+    # Cold
+    ctrl.Rule(current_temp['cold'] & water_flow['very_weak'], valve_opening['slight_closing']),
+    ctrl.Rule(current_temp['cold'] & water_flow['weak'], valve_opening['moderate_closing']),
+    ctrl.Rule(current_temp['cold'] & water_flow['normal'], valve_opening['moderate_closing']),
+    ctrl.Rule(current_temp['cold'] & water_flow['strong'], valve_opening['strong_closing']),
+    ctrl.Rule(current_temp['cold'] & water_flow['very_strong'], valve_opening['max_closing']),
+
+    # Cool
+    ctrl.Rule(current_temp['cool'] & water_flow['very_weak'], valve_opening['slight_closing']),
+    ctrl.Rule(current_temp['cool'] & water_flow['weak'], valve_opening['moderate_closing']),
+    ctrl.Rule(current_temp['cool'] & water_flow['normal'], valve_opening['moderate_closing']),
+    ctrl.Rule(current_temp['cool'] & water_flow['strong'], valve_opening['slight_closing']),
+    ctrl.Rule(current_temp['cool'] & water_flow['very_strong'], valve_opening['no_change']),
+
+    # Comfortable
+    ctrl.Rule(current_temp['comfortable'] & water_flow['very_weak'], valve_opening['slight_closing']),
+    ctrl.Rule(current_temp['comfortable'] & water_flow['weak'], valve_opening['no_change']),
+    ctrl.Rule(current_temp['comfortable'] & water_flow['normal'], valve_opening['no_change']),
+    ctrl.Rule(current_temp['comfortable'] & water_flow['strong'], valve_opening['no_change']),
+    ctrl.Rule(current_temp['comfortable'] & water_flow['very_strong'], valve_opening['slight_opening']),
+
+    # Warm
+    ctrl.Rule(current_temp['warm'] & water_flow['very_weak'], valve_opening['moderate_opening']),
+    ctrl.Rule(current_temp['warm'] & water_flow['weak'], valve_opening['slight_opening']),
+    ctrl.Rule(current_temp['warm'] & water_flow['normal'], valve_opening['no_change']),
+    ctrl.Rule(current_temp['warm'] & water_flow['strong'], valve_opening['slight_closing']),
+    ctrl.Rule(current_temp['warm'] & water_flow['very_strong'], valve_opening['moderate_closing']),
+
+    # Hot
+    ctrl.Rule(current_temp['hot'] & water_flow['very_weak'], valve_opening['strong_opening']),
+    ctrl.Rule(current_temp['hot'] & water_flow['weak'], valve_opening['moderate_opening']),
+    ctrl.Rule(current_temp['hot'] & water_flow['normal'], valve_opening['slight_opening']),
+    ctrl.Rule(current_temp['hot'] & water_flow['strong'], valve_opening['no_change']),
+    ctrl.Rule(current_temp['hot'] & water_flow['very_strong'], valve_opening['slight_closing']),
+
+    # Very hot
+    ctrl.Rule(current_temp['very_hot'] & water_flow['very_weak'], valve_opening['max_opening']),
+    ctrl.Rule(current_temp['very_hot'] & water_flow['weak'], valve_opening['strong_opening']),
+    ctrl.Rule(current_temp['very_hot'] & water_flow['normal'], valve_opening['moderate_opening']),
+    ctrl.Rule(current_temp['very_hot'] & water_flow['strong'], valve_opening['slight_opening']),
+    ctrl.Rule(current_temp['very_hot'] & water_flow['very_strong'], valve_opening['no_change']),
 ]
 
-# Create and simulate the control system
 temp_ctrl = ctrl.ControlSystem(rules)
 temp_simulation = ctrl.ControlSystemSimulation(temp_ctrl)
 
-# Example usage
-temp_simulation.input['current_temp'] = 40  # Current temperature
-temp_simulation.input['desired_temp'] = 22  # Desired temperature
+# Input
+input_temp = 40
+input_flow = 32
+temp_simulation.input['current_temp'] = input_temp
+temp_simulation.input['water_flow'] = input_flow
 
-# Compute the result
+# Visualize the membership functions
+current_temp.view()
+plt.axvline(x=input_temp, color='red', linestyle='--', label=f'Input: {input_temp}°C')
+plt.legend()
+water_flow.view()
+plt.axvline(x=input_flow, color='blue', linestyle='--', label=f'Input: {input_flow}%')
+plt.legend()
+valve_opening.view()
+plt.show()
+
 temp_simulation.compute()
 
-# Output
-print("Power Adjustment: %.3f" %temp_simulation.output['power_adjustment'], '%')
-power_adjustment.view(sim=temp_simulation)
+print("Valve Opening Adjustment: %.2f%%" % temp_simulation.output['valve_opening'])
+valve_opening.view(sim=temp_simulation)
+plt.show()
+
+# 3d visualization
+temp_labels = ['very_cold', 'cold', 'cool', 'comfortable', 'warm', 'hot', 'very_hot']
+flow_labels = ['very_weak', 'weak', 'normal', 'strong', 'very_strong']
+temp_values = np.arange(len(temp_labels))
+flow_values = np.arange(len(flow_labels))
+
+# negative = closing, 0 = no change, positive = opening
+valve_matrix = np.array([
+    [-1, -2, -3, -4, -4],   # Very Cold
+    [-1, -2, -2, -3, -4],   # Cold
+    [-1, -2, -2, -1,  0],   # Cool
+    [-1,  0,  0,  0,  1],   # Comfortable
+    [ 2,  1,  0, -1, -2],   # Warm
+    [ 3,  2,  1,  0, -1],   # Hot
+    [ 4,  3,  2,  1,  0]    # Very Hot
+])
+
+flow_grid, temp_grid = np.meshgrid(flow_values, temp_values)
+
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+
+surf = ax.plot_surface(flow_grid, temp_grid, valve_matrix, cmap='coolwarm', edgecolor='k')
+
+ax.set_xticks(flow_values)
+ax.set_xticklabels(flow_labels, rotation=45, ha='right')
+ax.set_yticks(temp_values)
+ax.set_yticklabels(temp_labels)
+ax.set_zlabel('Valve Opening Action')
+ax.set_xlabel('Water Flow')
+ax.set_ylabel('Temperature')
+ax.set_title('3d Fuzzy Control Surface')
+
+fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5)
+#plt.subplots_adjust(left=0.15, right=0.85, top=0.9, bottom=0.2)
 plt.show()
